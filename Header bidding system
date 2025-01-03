@@ -51,7 +51,7 @@ const calculateFloorPrice = (adSize, deviceType) => {
             '728x90': 0.8
         }
     };
-    return floorPrices[deviceType][adSize] || 0.2; // Default floor price
+    return floorPrices[deviceType]?.[adSize] || 0.2; // Default floor price
 };
 
 pbjs.que.push(() => {
@@ -102,6 +102,41 @@ const initializeLazyLoading = () => {
     adSlots.forEach(adSlot => observer.observe(adSlot));
 };
 
+// Enhanced OpenRTB Bid Validation
+const validateBid = bid => {
+    const requiredFields = ['price', 'advertiserDomain', 'creativeId', 'adm'];
+
+    // Check required fields are present
+    const hasRequiredFields = requiredFields.every(field => bid.hasOwnProperty(field));
+    if (!hasRequiredFields) {
+        console.error('Bid validation failed: Missing required fields', bid);
+        return false;
+    }
+
+    // Validate individual fields
+    const isValidPrice = bid.price && typeof bid.price === 'number' && bid.price > 0;
+    const isValidDomain = bid.advertiserDomain && typeof bid.advertiserDomain === 'string';
+    const isValidCreative = bid.creativeId && typeof bid.creativeId === 'string';
+    const isValidMarkup = bid.adm && typeof bid.adm === 'string';
+
+    const isValid = isValidPrice && isValidDomain && isValidCreative && isValidMarkup;
+
+    if (!isValid) {
+        console.error('Bid validation failed: Invalid field values', bid);
+    }
+
+    return isValid;
+};
+
+// OpenRTB Bid Response Handling
+pbjs.onEvent('bidResponse', bid => {
+    if (!validateBid(bid)) {
+        console.error('Invalid bid response:', bid);
+    } else {
+        console.log('Valid bid received:', bid);
+    }
+});
+
 // Comprehensive Error Handling and Logging
 pbjs.onEvent('auctionEnd', auctionDetails => {
     auctionDetails.forEach(adUnit => {
@@ -120,18 +155,6 @@ ga('create', 'UA-XXXXX-Y', 'auto');
 ga('set', 'dimension1', 'Prebid.js Integration');
 pbjs.onEvent('bidWon', bid => {
     ga('send', 'event', 'Ad Bidding', 'Bid Won', bid.bidder);
-});
-
-// OpenRTB Bid Validation
-const validateBid = bid => {
-    const requiredFields = ['price', 'advertiserDomain', 'creativeId'];
-    return requiredFields.every(field => bid.hasOwnProperty(field));
-};
-
-pbjs.onEvent('bidResponse', bid => {
-    if (!validateBid(bid)) {
-        console.error('Invalid bid response:', bid);
-    }
 });
 
 // Implementing Fallback Ads for Unsuccessful Bidding Scenarios
@@ -160,7 +183,7 @@ export const testAdapters = () => {
     console.assert(isValidConfig, 'Adapter configurations are valid');
 
     // Mocking bid validation
-    const mockBid = { price: 1.2, advertiserDomain: 'example.com', creativeId: '12345' };
+    const mockBid = { price: 1.2, advertiserDomain: 'example.com', creativeId: '12345', adm: '<div>Ad Content</div>' };
     const isBidValid = validateBid(mockBid);
     console.assert(isBidValid, 'Bid validation passed');
 
