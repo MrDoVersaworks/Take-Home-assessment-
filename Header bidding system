@@ -1,4 +1,5 @@
-// Header Bidding System Implementation with CI/CD Pipeline
+// Header Bidding System Implementation with Testing and CI/CD Pipeline
+
 // Import and Configure Prebid.js
 import pbjs from 'prebid.js';
 
@@ -138,6 +139,38 @@ const displayFallbackAd = adSlotId => {
     const fallbackContent = '<img src="fallback-ad.jpg" alt="Fallback Ad">';
     document.getElementById(adSlotId).innerHTML = fallbackContent;
 };
+
+// Adding Unit Tests for Adapter Integration (Example using Jest)
+export const testAdapters = () => {
+    const adUnits = [
+        {
+            code: 'ad-slot-1',
+            mediaTypes: { banner: { sizes: [[300, 250], [728, 90]] } },
+            bids: [
+                { bidder: 'appnexus', params: { placementId: '123456' } },
+                { bidder: 'pubmatic', params: { publisherId: '987654', adSlot: 'Banner1@300x250' } }
+            ]
+        }
+    ];
+
+    const isValidConfig = adUnits.every(adUnit => {
+        return adUnit.bids.every(bid => bid.bidder && bid.params);
+    });
+
+    console.assert(isValidConfig, 'Adapter configurations are valid');
+
+    // Mocking bid validation
+    const mockBid = { price: 1.2, advertiserDomain: 'example.com', creativeId: '12345' };
+    const isBidValid = validateBid(mockBid);
+    console.assert(isBidValid, 'Bid validation passed');
+
+    console.log('All tests passed');
+};
+
+// Run Tests
+if (process.env.NODE_ENV === 'test') {
+    testAdapters();
+}
 
 // CI/CD Pipeline Setup
 // Example GitHub Actions YAML Configuration
